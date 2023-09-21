@@ -86,6 +86,7 @@ module.exports.changeMulti = async (req, res) => {
     case "active":
     case "inactive":
       await Product.updateMany({ _id: { $in: ids } }, { status: type });
+      req.flash("success", `Cập nhật trạng thái thành công ${ids.length} sản phẩm!`);
       break;
     case "delete-all":
       await Product.updateMany(
