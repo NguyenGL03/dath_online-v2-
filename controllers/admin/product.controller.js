@@ -8,7 +8,6 @@ const paginationHelper = require("../../helpers/pagination");
 
 // [GET] /admin/products
 module.exports.index = async (req, res) => {
-  
   //Tý viết code đoạn này
   const filterStatus = filterStatusHelper(req.query);
   let objectSearch = searchHelper(req.query);
@@ -17,21 +16,25 @@ module.exports.index = async (req, res) => {
     deleted: false,
   };
 
-  if(req.query.status) {
+  if (req.query.status) {
     find.status = req.query.status;
   }
 
-  if(req.query.keyword) {
+  if (req.query.keyword) {
     find.title = objectSearch.regex;
   }
 
   // Pagination
   let initPagination = {
     currentPage: 1,
-    limitItems: 4
+    limitItems: 4,
   };
   const countProducts = await Product.count(find);
-  const objectPagination = paginationHelper(initPagination, req.query, countProducts);
+  const objectPagination = paginationHelper(
+    initPagination,
+    req.query,
+    countProducts
+  );
   // End Pagination
 
   const products = await Product.find(find)
@@ -39,28 +42,28 @@ module.exports.index = async (req, res) => {
     .limit(objectPagination.limitItems)
     .skip(objectPagination.skip);
 
-  if(products.length > 0) {
+  if (products.length > 0) {
     res.render("admin/pages/products/index", {
       pageTitle: "Danh sách sản phẩm",
       products: products,
       filterStatus: filterStatus,
       keyword: objectSearch.keyword,
-      pagination: objectPagination
+      pagination: objectPagination,
     });
   } else {
     let stringQuery = "";
 
-    for(const key in req.query) {
-      if(key != "page") {
+    for (const key in req.query) {
+      if (key != "page") {
         stringQuery += `&${key}=${req.query[key]}`;
       }
     }
 
     const href = `${req.baseUrl}?page=1${stringQuery}`;
-    
+
     res.redirect(href);
   }
-}
+};
 
 // [PATCH] /admin/products/change-status/:status/:id
 module.exports.changeStatus = async (req, res) => {
@@ -69,8 +72,10 @@ module.exports.changeStatus = async (req, res) => {
 
   await Product.updateOne({ _id: id }, { status: status });
 
+  req.flash("success", "Cập nhật trạng thái thành công!");
+
   res.redirect("back");
-}
+};
 
 // [PATCH] /admin/products/change-multi
 module.exports.changeMulti = async (req, res) => {
@@ -80,13 +85,16 @@ module.exports.changeMulti = async (req, res) => {
   switch (type) {
     case "active":
     case "inactive":
-      await Product.updateMany({ _id: {$in: ids} }, { status: type });
+      await Product.updateMany({ _id: { $in: ids } }, { status: type });
       break;
     case "delete-all":
-      await Product.updateMany({ _id: {$in: ids} }, {
-        deleted: true,
-        deletedAt: new Date()
-      });
+      await Product.updateMany(
+        { _id: { $in: ids } },
+        {
+          deleted: true,
+          deletedAt: new Date(),
+        }
+      );
       break;
     case "change-position":
       for (const item of ids) {
@@ -99,17 +107,20 @@ module.exports.changeMulti = async (req, res) => {
   }
 
   res.redirect("back");
-}
+};
 
 // [DELETE] /admin/products/delete/:id
 module.exports.deleteItem = async (req, res) => {
   const id = req.params.id;
 
   // await Product.deleteOne({ _id: id });
-  await Product.updateOne({ _id: id }, {
-    deleted: true,
-    deletedAt: new Date()
-  });
+  await Product.updateOne(
+    { _id: id },
+    {
+      deleted: true,
+      deletedAt: new Date(),
+    }
+  );
 
   res.redirect("back");
-}
+};
