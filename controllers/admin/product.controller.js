@@ -8,60 +8,64 @@ const paginationHelper = require("../../helpers/pagination");
 
 // [GET] /admin/products
 module.exports.index = async (req, res) => {
-  //Tý viết code đoạn này
-  const filterStatus = filterStatusHelper(req.query);
-  let objectSearch = searchHelper(req.query);
+  try {
+    //Tý viết code đoạn này
+    const filterStatus = filterStatusHelper(req.query);
+    let objectSearch = searchHelper(req.query);
 
-  let find = {
-    deleted: false,
-  };
+    let find = {
+      deleted: false,
+    };
 
-  if (req.query.status) {
-    find.status = req.query.status;
-  }
-
-  if (req.query.keyword) {
-    find.title = objectSearch.regex;
-  }
-
-  // Pagination
-  let initPagination = {
-    currentPage: 1,
-    limitItems: 4,
-  };
-  const countProducts = await Product.count(find);
-  const objectPagination = paginationHelper(
-    initPagination,
-    req.query,
-    countProducts
-  );
-  // End Pagination
-
-  const products = await Product.find(find)
-    .sort({ position: "desc" })
-    .limit(objectPagination.limitItems)
-    .skip(objectPagination.skip);
-
-  if (products.length > 0) {
-    res.render("admin/pages/products/index", {
-      pageTitle: "Danh sách sản phẩm",
-      products: products,
-      filterStatus: filterStatus,
-      keyword: objectSearch.keyword,
-      pagination: objectPagination,
-    });
-  } else {
-    let stringQuery = "";
-
-    for (const key in req.query) {
-      if (key != "page") {
-        stringQuery += `&${key}=${req.query[key]}`;
-      }
+    if (req.query.status) {
+      find.status = req.query.status;
     }
 
-    const href = `${req.baseUrl}?page=1${stringQuery}`;
+    if (req.query.keyword) {
+      find.title = objectSearch.regex;
+    }
 
-    res.redirect(href);
+    // Pagination
+    let initPagination = {
+      currentPage: 1,
+      limitItems: 4,
+    };
+    const countProducts = await Product.count(find);
+    const objectPagination = paginationHelper(
+      initPagination,
+      req.query,
+      countProducts
+    );
+    // End Pagination
+
+    const products = await Product.find(find)
+      .sort({ position: "desc" })
+      .limit(objectPagination.limitItems)
+      .skip(objectPagination.skip);
+
+    if (products.length > 0 || countProducts == 0) {
+      res.render("admin/pages/products/index", {
+        pageTitle: "Danh sách sản phẩm",
+        products: products,
+        filterStatus: filterStatus,
+        keyword: objectSearch.keyword,
+        pagination: objectPagination,
+      });
+    } else {
+      let stringQuery = "";
+
+      for (const key in req.query) {
+        if (key != "page") {
+          stringQuery += `&${key}=${req.query[key]}`;
+        }
+      }
+
+      const href = `${req.baseUrl}?page=1${stringQuery}`;
+
+      res.redirect(href);
+    }
+  } catch (error) {
+    res.redirect("back");
   }
 };
 
@@ -128,4 +132,30 @@ module.exports.deleteItem = async (req, res) => {
   req.flash("success", `Xóa thành công sản phẩm!`);
 
   res.redirect("back");
+};
+
+// [GET] /admin/products/create
+module.exports.create = async (req, res) => {
+  res.render("admin/pages/products/create", {
+    pageTitle: "Tạo mới sản phẩm"
+  });
+};
+
+// [POST] /admin/products/create
+module.exports.createPost = async (req, res) => {
+  req.body.price = parseInt(req.body.price);
+  req.body.discountPercentage = parseInt(req.body.discountPercentage);
+  req.body.stock = parseInt(req.body.stock);
+
+  if(req.body.position === "") {
+    const countProducts = await Product.countDocuments();
+    req.body.position = countProducts + 1;
+  } else {
+    req.body.position = parseInt(req.body.position);
+  }
+
+  const product = new Product(req.body);
+  await product.save();
+
+  res.redirect(`/${systemConfig.prefixAdmin}/products`);
 };
