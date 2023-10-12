@@ -72,9 +72,7 @@ module.exports.index = async (req, res) => {
         const userUpdated = await Account.findOne({
           _id: userUpdatedId.account_id
         });
-  
-        console.log(userUpdated)
-  
+    
         if(userUpdated) {
           userUpdatedId.accountFullName = userUpdated.fullName;
         }
