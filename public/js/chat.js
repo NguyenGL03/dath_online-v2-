@@ -16,11 +16,13 @@ if (formSendData) {
     const images = upload.cachedFileArray || [];
 
     if (content || images.length > 0) {
-      // Gửi content hoặc ảnh lên server
-      console.log(images);
-      
-      socket.emit("CLIENT_SEND_MESSAGE", content);
+      // Gửi content hoặc ảnh lên server      
+      socket.emit("CLIENT_SEND_MESSAGE", {
+        content: content,
+        images: images
+      });
       e.target.elements.content.value = "";
+      upload.resetPreviewPanel();
       socket.emit("CLIENT_SEND_TYPING", "hidden");
     }
   });
@@ -36,6 +38,8 @@ socket.on("SERVER_RETURN_MESSAGE", (data) => {
   const div = document.createElement("div");
 
   let htmlFullName = "";
+  let htmlContent = "";
+  let htmlImages = "";
 
   if (myId == data.userId) {
     div.classList.add("inner-outgoing");
@@ -44,9 +48,28 @@ socket.on("SERVER_RETURN_MESSAGE", (data) => {
     htmlFullName = `<div class="inner-name">${data.fullName}</div>`;
   }
 
+  if(data.content) {
+    htmlContent = `
+      <div class="inner-content">${data.content}</div>
+    `;
+  }
+
+  if(data.images) {
+    htmlImages += `<div class="inner-images">`;
+
+    for (const image of data.images) {
+      htmlImages += `
+        <img src="${image}">
+      `;
+    }
+
+    htmlImages += `</div>`;
+  }
+
   div.innerHTML = `
     ${htmlFullName}
-    <div class="inner-content">${data.content}</div>
+    ${htmlContent}
+    ${htmlImages}
   `;
 
   body.insertBefore(div, boxTyping);
